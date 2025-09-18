@@ -2,13 +2,14 @@
 .app {
   min-height: 100vh;
   width: 100%;
-  background: #1b1f3d; /* lite ljusare än tidigare mörkblå */
+  background: #1b1f3d;
   color: #e0e0e0;
   padding: 24px;
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
 }
 
 /* Titel */
@@ -18,7 +19,7 @@
   margin-bottom: 32px;
   text-align: center;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-  background: linear-gradient(90deg, #4facfe, #00f2fe); /* blå-grön gradient */
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -36,28 +37,26 @@
   margin-bottom: 32px;
   width: 100%;
   max-width: 600px;
+  box-sizing: border-box;
 }
 
 .task-input input,
 .task-input select {
   flex: 1;
   padding: 12px;
-  background: #2c2f52; /* matchar mörkblå tema */
+  background: #2c2f52;
   border: none;
   border-radius: 6px;
   color: #e0e0e0;
   min-width: 120px;
+  box-sizing: border-box;
 }
 
 .task-input button {
   padding: 12px 24px;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(
-    to right,
-    #4facfe,
-    #00f2fe
-  ); /* matchar titel gradient */
+  background: linear-gradient(to right, #4facfe, #00f2fe);
   color: #1b1f3d;
   font-weight: 500;
   cursor: pointer;
@@ -77,16 +76,19 @@
   width: 100%;
   max-width: 1200px;
   padding-bottom: 24px;
+  box-sizing: border-box;
 }
 
 .column {
-  flex: 1 1 280px;
-  max-width: 320px;
-  background: #262b4f; /* mörkare men harmoniserande */
+  flex: 1 1 0;
+  max-width: 32%;
+  min-width: 280px;
+  background: #262b4f;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Kolumn headers */
@@ -104,7 +106,7 @@
   background: linear-gradient(to right, #4facfe, #00f2fe);
 }
 .column-header.inProgress {
-  background: linear-gradient(to right, #f5af19, #f12711); /* orange-röd */
+  background: linear-gradient(to right, #f5af19, #f12711);
 }
 .column-header.done {
   background: linear-gradient(to right, #22c55e, #16a34a);
@@ -135,7 +137,7 @@
 .task {
   padding: 12px;
   margin-bottom: 12px;
-  background: #2c335c; /* matchar kolumnen men lite ljusare */
+  background: #2c335c;
   border-radius: 8px;
   display: flex;
   justify-content: space-between;
@@ -199,13 +201,35 @@
   justify-content: space-between;
 }
 
-/* Responsivitet */
 @media (max-width: 768px) {
   .columns {
     flex-direction: column;
     align-items: center;
+    gap: 32px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
   .column {
     max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .column {
+    max-width: 100%;
+  }
+
+  .task-input {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .task-input input,
+  .task-input select,
+  .task-input button {
+    width: 100%;
+    max-width: 320px;
   }
 }

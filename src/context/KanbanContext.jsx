@@ -29,8 +29,9 @@ export const KanbanProvider = ({ children }) => {
     localStorage.setItem("kanbanColumns", JSON.stringify(columns));
   }, [columns]);
 
+  // Task-funktioner
   const addTask = (columnId, content) => {
-    if (!content?.trim()) return;
+    if (!content || !content.trim()) return;
     setColumns((prev) => ({
       ...prev,
       [columnId]: {
@@ -77,9 +78,33 @@ export const KanbanProvider = ({ children }) => {
     });
   };
 
+  // Kolumn-funktioner
+  const addColumn = (name) => {
+    const id = Date.now().toString();
+    setColumns((prev) => ({
+      ...prev,
+      [id]: { name, items: [] },
+    }));
+  };
+
+  const removeColumn = (columnId) => {
+    setColumns((prev) => {
+      const updated = { ...prev };
+      delete updated[columnId];
+      return updated;
+    });
+  };
+
   return (
     <KanbanContext.Provider
-      value={{ columns, addTask, updateTask, removeTask, moveTask }}
+      value={{
+        columns,
+        addTask,
+        updateTask,
+        removeTask,
+        moveTask,
+        removeColumn,
+      }}
     >
       {children}
     </KanbanContext.Provider>

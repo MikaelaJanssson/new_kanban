@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useKanban } from "../context/KanbanContext";
 import TaskModal from "./TaskModal";
 
@@ -15,9 +15,9 @@ function ColumnPage() {
 
   // Touch drag
   const [touchDragging, setTouchDragging] = useState(false);
+  const [touchTask, setTouchTask] = useState(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef(null);
-  const draggedItemRef = useRef(null);
 
   if (!column) return <h2>Column not found</h2>;
 
@@ -36,9 +36,9 @@ function ColumnPage() {
   const handleTouchStart = (item, e) => {
     longPressTimer.current = setTimeout(() => {
       setTouchDragging(true);
-      draggedItemRef.current = { columnId, item };
+      setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 400);
+    }, 300);
   };
 
   const handleTouchMove = (e) => {
@@ -46,18 +46,44 @@ function ColumnPage() {
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  const handleColumnTouchEnd = () => {
+  const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
-    if (touchDragging && draggedItemRef.current) {
-      moveTask(
-        draggedItemRef.current.columnId,
-        columnId,
-        draggedItemRef.current.item
+
+    if (touchDragging && touchTask) {
+      // Kolla vilken kolumn som ligger under fingret
+      const element = document.elementFromPoint(
+        touchPosition.x,
+        touchPosition.y
       );
+      if (element) {
+        const colDiv = element.closest(".column");
+        if (colDiv) {
+          const targetColumnId = Object.keys(columns).find(
+            (key) =>
+              columns[key].name ===
+              colDiv.querySelector(".column-header").textContent
+          );
+          if (targetColumnId) {
+            moveTask(touchTask.columnId, targetColumnId, touchTask.item);
+          }
+        }
+      }
     }
+
     setTouchDragging(false);
-    draggedItemRef.current = null;
+    setTouchTask(null);
   };
+
+  // Säkerställ global touchEnd så det fungerar även om man drar utanför kolumnen
+  useEffect(() => {
+    const handleGlobalTouchEnd = () => {
+      if (touchDragging) handleTouchEnd();
+    };
+    document.addEventListener("touchend", handleGlobalTouchEnd);
+    return () => {
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
+    };
+  }, [touchDragging, touchTask, touchPosition]);
 
   return (
     <div className="app">
@@ -71,7 +97,6 @@ function ColumnPage() {
         className="column-content"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        onTouchEnd={handleColumnTouchEnd}
       >
         {column.items.map((item) => (
           <div
@@ -79,9 +104,7 @@ function ColumnPage() {
             className="task"
             draggable
             onDragStart={() => handleDragStart(item)}
-            onClick={() =>
-              !touchDragging && setSelectedTask({ columnId, ...item })
-            }
+            onClick={() => setSelectedTask({ columnId, ...item })}
             onTouchStart={(e) => handleTouchStart(item, e)}
             onTouchMove={handleTouchMove}
           >
@@ -91,7 +114,7 @@ function ColumnPage() {
       </div>
 
       {/* Touch drag preview */}
-      {touchDragging && draggedItemRef.current && (
+      {touchDragging && touchTask && (
         <div
           className="task"
           style={{
@@ -104,7 +127,7 @@ function ColumnPage() {
             zIndex: 999,
           }}
         >
-          {draggedItemRef.current.item.content}
+          {touchTask.item.content}
         </div>
       )}
 

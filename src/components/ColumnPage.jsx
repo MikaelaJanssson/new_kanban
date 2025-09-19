@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useRef } from "react";
 import { useKanban } from "../context/KanbanContext";
-import TaskModal from "../components/TaskModal";
+import TaskModal from "./TaskModal";
 
 function ColumnPage() {
   const { columnId } = useParams();
@@ -15,9 +15,9 @@ function ColumnPage() {
 
   // Touch drag
   const [touchDragging, setTouchDragging] = useState(false);
-  const [touchTask, setTouchTask] = useState(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef(null);
+  const draggedItemRef = useRef(null);
 
   if (!column) return <h2>Column not found</h2>;
 
@@ -36,7 +36,7 @@ function ColumnPage() {
   const handleTouchStart = (item, e) => {
     longPressTimer.current = setTimeout(() => {
       setTouchDragging(true);
-      setTouchTask({ columnId, item });
+      draggedItemRef.current = { columnId, item };
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
     }, 400);
   };
@@ -46,13 +46,17 @@ function ColumnPage() {
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  const handleTouchEnd = () => {
+  const handleColumnTouchEnd = () => {
     clearTimeout(longPressTimer.current);
-    if (touchDragging && touchTask) {
-      moveTask(touchTask.columnId, columnId, touchTask.item);
+    if (touchDragging && draggedItemRef.current) {
+      moveTask(
+        draggedItemRef.current.columnId,
+        columnId,
+        draggedItemRef.current.item
+      );
     }
     setTouchDragging(false);
-    setTouchTask(null);
+    draggedItemRef.current = null;
   };
 
   return (
@@ -67,7 +71,7 @@ function ColumnPage() {
         className="column-content"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        onTouchEnd={handleTouchEnd}
+        onTouchEnd={handleColumnTouchEnd}
       >
         {column.items.map((item) => (
           <div
@@ -75,13 +79,11 @@ function ColumnPage() {
             className="task"
             draggable
             onDragStart={() => handleDragStart(item)}
-            onClick={() => setSelectedTask({ columnId, ...item })}
+            onClick={() =>
+              !touchDragging && setSelectedTask({ columnId, ...item })
+            }
             onTouchStart={(e) => handleTouchStart(item, e)}
             onTouchMove={handleTouchMove}
-            onTouchEnd={() => {
-              clearTimeout(longPressTimer.current);
-              if (!touchDragging) setSelectedTask({ columnId, ...item });
-            }}
           >
             {item.content}
           </div>
@@ -89,7 +91,7 @@ function ColumnPage() {
       </div>
 
       {/* Touch drag preview */}
-      {touchDragging && touchTask && (
+      {touchDragging && draggedItemRef.current && (
         <div
           className="task"
           style={{
@@ -102,7 +104,7 @@ function ColumnPage() {
             zIndex: 999,
           }}
         >
-          {touchTask.item.content}
+          {draggedItemRef.current.item.content}
         </div>
       )}
 

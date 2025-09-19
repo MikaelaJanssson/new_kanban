@@ -19,12 +19,22 @@ function ColumnPage() {
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef(null);
 
+  // Touch drag effect (global touchend)
+  useEffect(() => {
+    const handleGlobalTouchEnd = () => {
+      if (touchDragging) handleTouchEnd();
+    };
+    document.addEventListener("touchend", handleGlobalTouchEnd);
+    return () => document.removeEventListener("touchend", handleGlobalTouchEnd);
+  }, [touchDragging, touchTask, touchPosition]);
+
   if (!column) return <h2>Column not found</h2>;
 
-  // Desktop drag
+  // Desktop drag handlers
   const handleDragStart = (item) => {
     setDraggedItem({ columnId, item });
   };
+
   const handleDrop = () => {
     if (!draggedItem) return;
     moveTask(draggedItem.columnId, columnId, draggedItem.item);
@@ -37,16 +47,19 @@ function ColumnPage() {
       setTouchDragging(true);
       setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 300);
+    }, 300); // 300ms long press
   };
+
   const handleTouchMove = (e) => {
     if (!touchDragging) return;
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
+
   const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
 
     if (touchDragging && touchTask) {
+      // Kolla vilken kolumn som ligger under fingret
       const element = document.elementFromPoint(
         touchPosition.x,
         touchPosition.y
@@ -69,17 +82,6 @@ function ColumnPage() {
     setTouchDragging(false);
     setTouchTask(null);
   };
-
-  // Global touchend
-  useEffect(() => {
-    const handleGlobalTouchEnd = () => {
-      if (touchDragging) handleTouchEnd();
-    };
-    document.addEventListener("touchend", handleGlobalTouchEnd);
-    return () => {
-      document.removeEventListener("touchend", handleGlobalTouchEnd);
-    };
-  }, [touchDragging, touchTask, touchPosition]);
 
   return (
     <div className="app">
@@ -109,6 +111,7 @@ function ColumnPage() {
         ))}
       </div>
 
+      {/* Touch drag preview */}
       {touchDragging && touchTask && (
         <div
           className="task"

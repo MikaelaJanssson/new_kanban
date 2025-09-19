@@ -26,7 +26,7 @@ function Board() {
     setNewTask("");
   };
 
-  // Desktop drag handlers
+  // Desktop drag
   const handleDragStart = (columnId, item) => {
     setDraggedItem({ columnId, item });
   };
@@ -36,61 +36,53 @@ function Board() {
     setDraggedItem(null);
   };
 
-  // Touch handlers
+  // Touch drag
   const handleTouchStart = (columnId, item, e) => {
     longPressTimer.current = setTimeout(() => {
       setTouchDragging(true);
       setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 300);
+    }, 300); // 300ms långtryck
   };
+
   const handleTouchMove = (e) => {
     if (!touchDragging) return;
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
+
   const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
-
     if (touchDragging && touchTask) {
-      // Hitta kolumn under fingret
       const element = document.elementFromPoint(
         touchPosition.x,
         touchPosition.y
       );
       if (element) {
         const colDiv = element.closest(".column");
-        if (colDiv) {
-          const targetColumnId = Object.keys(columns).find(
-            (key) =>
-              columns[key].name ===
-              colDiv.querySelector(".column-header").textContent
-          );
-          if (targetColumnId) {
-            moveTask(touchTask.columnId, targetColumnId, touchTask.item);
-          }
+        if (colDiv && colDiv.dataset.columnId) {
+          const targetColumnId = colDiv.dataset.columnId;
+          moveTask(touchTask.columnId, targetColumnId, touchTask.item);
         }
       }
     }
-
     setTouchDragging(false);
     setTouchTask(null);
   };
 
-  // Global touchend
+  // Global touchend så vi inte tappar drag om man släpper utanför kolumn
   useEffect(() => {
     const handleGlobalTouchEnd = () => {
       if (touchDragging) handleTouchEnd();
     };
     document.addEventListener("touchend", handleGlobalTouchEnd);
-    return () => {
-      document.removeEventListener("touchend", handleGlobalTouchEnd);
-    };
+    return () => document.removeEventListener("touchend", handleGlobalTouchEnd);
   }, [touchDragging, touchTask, touchPosition]);
 
   return (
     <div className="app">
       <h1 className="title">Kanban Board</h1>
 
+      {/* Input för ny task */}
       <div className="task-input">
         <input
           type="text"
@@ -112,9 +104,10 @@ function Board() {
         <button onClick={handleAddTask}>Add</button>
       </div>
 
+      {/* Kolumner */}
       <div className="columns">
         {Object.keys(columns).map((columnId) => (
-          <div key={columnId} className="column">
+          <div key={columnId} className="column" data-column-id={columnId}>
             <div className={`column-header ${columnId}`}>
               <Link to={`/column/${columnId}`} style={{ color: "inherit" }}>
                 {columns[columnId].name}
@@ -145,6 +138,7 @@ function Board() {
         ))}
       </div>
 
+      {/* Touch drag preview */}
       {touchDragging && touchTask && (
         <div
           className="task"

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useKanban } from "../context/KanbanContext";
 import TaskModal from "./TaskModal";
@@ -15,9 +15,9 @@ function Board() {
 
   // Touch drag
   const [touchDragging, setTouchDragging] = useState(false);
+  const [touchTask, setTouchTask] = useState(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef(null);
-  const draggedItemRef = useRef(null);
 
   // Lägg till ny task
   const handleAddTask = () => {
@@ -41,9 +41,9 @@ function Board() {
   const handleTouchStart = (columnId, item, e) => {
     longPressTimer.current = setTimeout(() => {
       setTouchDragging(true);
-      draggedItemRef.current = { columnId, item };
+      setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 400); // long press 400ms
+    }, 300); // kortare långtryck
   };
 
   const handleTouchMove = (e) => {
@@ -51,18 +51,44 @@ function Board() {
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  const handleColumnTouchEnd = (columnId) => {
+  const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
-    if (touchDragging && draggedItemRef.current) {
-      moveTask(
-        draggedItemRef.current.columnId,
-        columnId,
-        draggedItemRef.current.item
+
+    if (touchDragging && touchTask) {
+      // Kolla vilken kolumn som ligger under fingret
+      const element = document.elementFromPoint(
+        touchPosition.x,
+        touchPosition.y
       );
+      if (element) {
+        const colDiv = element.closest(".column");
+        if (colDiv) {
+          const targetColumnId = Object.keys(columns).find(
+            (key) =>
+              columns[key].name ===
+              colDiv.querySelector(".column-header").textContent
+          );
+          if (targetColumnId) {
+            moveTask(touchTask.columnId, targetColumnId, touchTask.item);
+          }
+        }
+      }
     }
+
     setTouchDragging(false);
-    draggedItemRef.current = null;
+    setTouchTask(null);
   };
+
+  // Säkerställer att touchEnd hanteras även om användaren drar utanför kolumnen
+  useEffect(() => {
+    const handleGlobalTouchEnd = () => {
+      if (touchDragging) handleTouchEnd();
+    };
+    document.addEventListener("touchend", handleGlobalTouchEnd);
+    return () => {
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
+    };
+  }, [touchDragging, touchTask, touchPosition]);
 
   return (
     <div className="app">
@@ -105,7 +131,6 @@ function Board() {
               className="column-content"
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(columnId)}
-              onTouchEnd={() => handleColumnTouchEnd(columnId)}
             >
               {columns[columnId].items.map((item) => (
                 <div
@@ -113,9 +138,7 @@ function Board() {
                   className="task"
                   draggable
                   onDragStart={() => handleDragStart(columnId, item)}
-                  onClick={() =>
-                    !touchDragging && setSelectedTask({ columnId, ...item })
-                  }
+                  onClick={() => setSelectedTask({ columnId, ...item })}
                   onTouchStart={(e) => handleTouchStart(columnId, item, e)}
                   onTouchMove={handleTouchMove}
                 >
@@ -128,7 +151,7 @@ function Board() {
       </div>
 
       {/* Touch drag preview */}
-      {touchDragging && draggedItemRef.current && (
+      {touchDragging && touchTask && (
         <div
           className="task"
           style={{
@@ -141,7 +164,7 @@ function Board() {
             zIndex: 999,
           }}
         >
-          {draggedItemRef.current.item.content}
+          {touchTask.item.content}
         </div>
       )}
 

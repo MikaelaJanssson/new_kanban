@@ -30,7 +30,6 @@ function Board() {
   const handleDragStart = (columnId, item) => {
     setDraggedItem({ columnId, item });
   };
-
   const handleDrop = (columnId) => {
     if (!draggedItem) return;
     moveTask(draggedItem.columnId, columnId, draggedItem.item);
@@ -43,19 +42,17 @@ function Board() {
       setTouchDragging(true);
       setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 300); // kortare långtryck
+    }, 300);
   };
-
   const handleTouchMove = (e) => {
     if (!touchDragging) return;
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
-
   const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
 
     if (touchDragging && touchTask) {
-      // Kolla vilken kolumn som ligger under fingret
+      // Hitta kolumn under fingret
       const element = document.elementFromPoint(
         touchPosition.x,
         touchPosition.y
@@ -79,7 +76,7 @@ function Board() {
     setTouchTask(null);
   };
 
-  // Säkerställer att touchEnd hanteras även om användaren drar utanför kolumnen
+  // Global touchend
   useEffect(() => {
     const handleGlobalTouchEnd = () => {
       if (touchDragging) handleTouchEnd();
@@ -94,7 +91,6 @@ function Board() {
     <div className="app">
       <h1 className="title">Kanban Board</h1>
 
-      {/* Input för ny task */}
       <div className="task-input">
         <input
           type="text"
@@ -116,7 +112,6 @@ function Board() {
         <button onClick={handleAddTask}>Add</button>
       </div>
 
-      {/* Kolumner */}
       <div className="columns">
         {Object.keys(columns).map((columnId) => (
           <div key={columnId} className="column">
@@ -150,7 +145,6 @@ function Board() {
         ))}
       </div>
 
-      {/* Touch drag preview */}
       {touchDragging && touchTask && (
         <div
           className="task"

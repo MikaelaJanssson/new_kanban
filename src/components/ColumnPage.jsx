@@ -21,11 +21,10 @@ function ColumnPage() {
 
   if (!column) return <h2>Column not found</h2>;
 
-  // Desktop drag handlers
+  // Desktop drag
   const handleDragStart = (item) => {
     setDraggedItem({ columnId, item });
   };
-
   const handleDrop = () => {
     if (!draggedItem) return;
     moveTask(draggedItem.columnId, columnId, draggedItem.item);
@@ -40,17 +39,14 @@ function ColumnPage() {
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
     }, 300);
   };
-
   const handleTouchMove = (e) => {
     if (!touchDragging) return;
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
-
   const handleTouchEnd = () => {
     clearTimeout(longPressTimer.current);
 
     if (touchDragging && touchTask) {
-      // Kolla vilken kolumn som ligger under fingret
       const element = document.elementFromPoint(
         touchPosition.x,
         touchPosition.y
@@ -74,7 +70,7 @@ function ColumnPage() {
     setTouchTask(null);
   };
 
-  // Säkerställ global touchEnd så det fungerar även om man drar utanför kolumnen
+  // Global touchend
   useEffect(() => {
     const handleGlobalTouchEnd = () => {
       if (touchDragging) handleTouchEnd();
@@ -113,7 +109,6 @@ function ColumnPage() {
         ))}
       </div>
 
-      {/* Touch drag preview */}
       {touchDragging && touchTask && (
         <div
           className="task"

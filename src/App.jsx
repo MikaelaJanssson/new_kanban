@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { KanbanProvider } from "./KanbanContext";
-import Board from "./Board";
-import ColumnPage from "./ColumnPage";
+import { KanbanProvider } from "./context/KanbanContext";
+import Board from "./components/Board";
+import ColumnPage from "./components/ColumnPage";
 import "./App.css";
 
 function App() {

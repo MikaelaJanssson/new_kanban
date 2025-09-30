@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, useEffect } from "react";
-
-const KanbanContext = createContext();
+import React, { useState, useEffect } from "react";
+import { KanbanContext } from "./KanbanContextObject";
 
 export const KanbanProvider = ({ children }) => {
+  // === State-hantering ===
+  // Försök läsa in sparade kolumner från localStorage
   const savedColumns = JSON.parse(localStorage.getItem("kanbanColumns"));
 
+  // Om det finns sparade kolumner används de, annars skapas en startstruktur
   const [columns, setColumns] = useState(
     savedColumns || {
       todo: {
@@ -25,13 +27,16 @@ export const KanbanProvider = ({ children }) => {
     }
   );
 
+  // Varje gång state (columns) ändras sparas det i localStorage
   useEffect(() => {
     localStorage.setItem("kanbanColumns", JSON.stringify(columns));
   }, [columns]);
 
-  // Task-funktioner
+  // === Funktioner för att hantera tasks ===
+
+  // Lägg till en ny task i en specifik kolumn
   const addTask = (columnId, content) => {
-    if (!content || !content.trim()) return;
+    if (!content || !content.trim()) return; // förhindra tom text
     setColumns((prev) => ({
       ...prev,
       [columnId]: {
@@ -44,6 +49,7 @@ export const KanbanProvider = ({ children }) => {
     }));
   };
 
+  // Uppdatera innehållet i en befintlig task
   const updateTask = (columnId, itemId, newContent) => {
     setColumns((prev) => {
       const updated = { ...prev };
@@ -53,6 +59,7 @@ export const KanbanProvider = ({ children }) => {
     });
   };
 
+  // Ta bort en task från en kolumn
   const removeTask = (columnId, itemId) => {
     setColumns((prev) => {
       const updated = { ...prev };
@@ -63,8 +70,9 @@ export const KanbanProvider = ({ children }) => {
     });
   };
 
+  // Flytta en task från en kolumn till en annan
   const moveTask = (fromColumn, toColumn, item) => {
-    if (fromColumn === toColumn) return;
+    if (fromColumn === toColumn) return; // inget händer om samma kolumn
     setColumns((prev) => {
       const sourceItems = prev[fromColumn].items.filter(
         (i) => i.id !== item.id
@@ -78,15 +86,7 @@ export const KanbanProvider = ({ children }) => {
     });
   };
 
-  // Kolumn-funktioner
-  const addColumn = (name) => {
-    const id = Date.now().toString();
-    setColumns((prev) => ({
-      ...prev,
-      [id]: { name, items: [] },
-    }));
-  };
-
+  // Ta bort en hel kolumn
   const removeColumn = (columnId) => {
     setColumns((prev) => {
       const updated = { ...prev };
@@ -95,6 +95,7 @@ export const KanbanProvider = ({ children }) => {
     });
   };
 
+  // Provider skickar ut både data (columns) och funktioner
   return (
     <KanbanContext.Provider
       value={{
@@ -110,5 +111,3 @@ export const KanbanProvider = ({ children }) => {
     </KanbanContext.Provider>
   );
 };
-
-export const useKanban = () => useContext(KanbanContext);

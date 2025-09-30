@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
-import { useKanban } from "../context/KanbanContext";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useKanban } from "../context/useKanban";
 import TaskModal from "./TaskModal";
 
 function ColumnPage() {
@@ -8,26 +8,57 @@ function ColumnPage() {
   const { columns, moveTask } = useKanban();
   const column = columns[columnId];
 
-  const [selectedTask, setSelectedTask] = useState(null);
+  // ====================
+  // State och refs
+  // ====================
+  const [selectedTask, setSelectedTask] = useState(null); // task som öppnas i modal
+  const [draggedItem, setDraggedItem] = useState(null); // desktop drag
+  const [touchDragging, setTouchDragging] = useState(false); // touch drag flag
+  const [touchTask, setTouchTask] = useState(null); // task som dras med touch
+  const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 }); // touch position
+  const longPressTimer = useRef(null); // timer för långtryck på touch
 
-  // Desktop drag
-  const [draggedItem, setDraggedItem] = useState(null);
+  // ====================
+  // Touch end callback
+  // ====================
+  const handleTouchEnd = useCallback(() => {
+    clearTimeout(longPressTimer.current);
 
-  // Touch drag
-  const [touchDragging, setTouchDragging] = useState(false);
-  const [touchTask, setTouchTask] = useState(null);
-  const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
-  const longPressTimer = useRef(null);
+    if (touchDragging && touchTask) {
+      const element = document.elementFromPoint(
+        touchPosition.x,
+        touchPosition.y
+      );
 
-  // Touch drag effect (global touchend)
+      if (element) {
+        const colDiv = element.closest(".column");
+        if (colDiv) {
+          // Hitta kolumnen baserat på namn
+          const targetColumnId = Object.keys(columns).find(
+            (key) =>
+              columns[key].name ===
+              colDiv.querySelector(".column-header").textContent
+          );
+          if (targetColumnId) {
+            moveTask(touchTask.columnId, targetColumnId, touchTask.item);
+          }
+        }
+      }
+    }
+
+    setTouchDragging(false);
+    setTouchTask(null);
+  }, [touchDragging, touchTask, touchPosition, columns, moveTask]);
+
+  // Global touchend effect
+
   useEffect(() => {
-    const handleGlobalTouchEnd = () => {
-      if (touchDragging) handleTouchEnd();
-    };
+    const handleGlobalTouchEnd = () => handleTouchEnd();
     document.addEventListener("touchend", handleGlobalTouchEnd);
     return () => document.removeEventListener("touchend", handleGlobalTouchEnd);
-  }, [touchDragging, touchTask, touchPosition]);
+  }, [handleTouchEnd]);
 
+  // Early return om kolumn inte finns
   if (!column) return <h2>Column not found</h2>;
 
   // Desktop drag handlers
@@ -47,7 +78,7 @@ function ColumnPage() {
       setTouchDragging(true);
       setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 300); // 300ms long press
+    }, 300); // långtryck 300ms
   };
 
   const handleTouchMove = (e) => {
@@ -55,34 +86,7 @@ function ColumnPage() {
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  const handleTouchEnd = () => {
-    clearTimeout(longPressTimer.current);
-
-    if (touchDragging && touchTask) {
-      // Kolla vilken kolumn som ligger under fingret
-      const element = document.elementFromPoint(
-        touchPosition.x,
-        touchPosition.y
-      );
-      if (element) {
-        const colDiv = element.closest(".column");
-        if (colDiv) {
-          const targetColumnId = Object.keys(columns).find(
-            (key) =>
-              columns[key].name ===
-              colDiv.querySelector(".column-header").textContent
-          );
-          if (targetColumnId) {
-            moveTask(touchTask.columnId, targetColumnId, touchTask.item);
-          }
-        }
-      }
-    }
-
-    setTouchDragging(false);
-    setTouchTask(null);
-  };
-
+  // Render
   return (
     <div className="app">
       <h1 className="title">{column.name}</h1>
@@ -129,6 +133,7 @@ function ColumnPage() {
         </div>
       )}
 
+      {/* Modal för redigering av task */}
       {selectedTask && (
         <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}

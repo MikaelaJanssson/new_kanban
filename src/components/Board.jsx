@@ -1,19 +1,20 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useKanban } from "../context/KanbanContext";
+import { useKanban } from "../context/useKanban";
 import TaskModal from "./TaskModal";
 
 function Board() {
   const { columns, addTask, moveTask } = useKanban();
 
-  const [newTask, setNewTask] = useState("");
-  const [activeColumn, setActiveColumn] = useState("todo");
-  const [selectedTask, setSelectedTask] = useState(null);
+  // State för input och modal
+  const [newTask, setNewTask] = useState(""); // text för ny task
+  const [activeColumn, setActiveColumn] = useState("todo"); // vilken kolumn inputen ska läggas i
+  const [selectedTask, setSelectedTask] = useState(null); // aktuell task för modal
 
   // Desktop drag
   const [draggedItem, setDraggedItem] = useState(null);
 
-  // Touch drag
+  //  Touch drag
   const [touchDragging, setTouchDragging] = useState(false);
   const [touchTask, setTouchTask] = useState(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
@@ -36,13 +37,14 @@ function Board() {
     setDraggedItem(null);
   };
 
-  // Touch drag
+  //  Touch drag
   const handleTouchStart = (columnId, item, e) => {
+    // Starta långtryck-timer (300ms) innan drag start
     longPressTimer.current = setTimeout(() => {
       setTouchDragging(true);
       setTouchTask({ columnId, item });
       setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-    }, 300); // 300ms långtryck
+    }, 300);
   };
 
   const handleTouchMove = (e) => {
@@ -50,9 +52,11 @@ function Board() {
     setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  const handleTouchEnd = () => {
+  // useCallback så vi kan lista den i useEffect dependencies
+  const handleTouchEnd = useCallback(() => {
     clearTimeout(longPressTimer.current);
     if (touchDragging && touchTask) {
+      // Kolla vilken kolumn som ligger under fingret
       const element = document.elementFromPoint(
         touchPosition.x,
         touchPosition.y
@@ -67,16 +71,16 @@ function Board() {
     }
     setTouchDragging(false);
     setTouchTask(null);
-  };
+  }, [touchDragging, touchTask, touchPosition, moveTask]);
 
-  // Global touchend så vi inte tappar drag om man släpper utanför kolumn
+  //  Global touchend
   useEffect(() => {
     const handleGlobalTouchEnd = () => {
-      if (touchDragging) handleTouchEnd();
+      handleTouchEnd();
     };
     document.addEventListener("touchend", handleGlobalTouchEnd);
     return () => document.removeEventListener("touchend", handleGlobalTouchEnd);
-  }, [touchDragging, touchTask, touchPosition]);
+  }, [handleTouchEnd]); // useCallback säkerställer rätt dependencies
 
   return (
     <div className="app">
@@ -156,6 +160,7 @@ function Board() {
         </div>
       )}
 
+      {/* Modal för redigering av task */}
       {selectedTask && (
         <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
